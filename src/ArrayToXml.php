@@ -1,9 +1,12 @@
 <?php
+
 namespace Spatie\ArrayToXml;
+
 use DOMElement;
 use DOMDocument;
 use DOMException;
 use DOMImplementation;
+
 class ArrayToXml
 {
     /**
@@ -18,6 +21,7 @@ class ArrayToXml
      * @var bool
      */
     protected $replaceSpacesByUnderScoresInKeyNames = true;
+
     /**
      * Construct a new instance.
      *
@@ -34,10 +38,10 @@ class ArrayToXml
     {
         $this->document = new DOMDocument($xmlVersion, $xmlEncoding);
         $this->replaceSpacesByUnderScoresInKeyNames = $replaceSpacesByUnderScoresInKeyNames;
-        if ($this->isArrayAllKeySequential($array) && ! empty($array)) {
+        if ($this->isArrayAllKeySequential($array) && !empty($array)) {
             throw new DOMException('Invalid Character Error');
         }
-        if (! empty($docTypeArray)) {
+        if (!empty($docTypeArray)) {
             $docType = $this->createDocType($docTypeArray);
             $this->document->appendChild($docType);
         }
@@ -64,6 +68,7 @@ class ArrayToXml
         $converter = new static($array, $rootElementName, $replaceSpacesByUnderScoresInKeyNames, $xmlEncoding, $xmlVersion, $docTypeArray);
         return $converter->toXml();
     }
+
     /**
      * Return as XML.
      *
@@ -73,6 +78,7 @@ class ArrayToXml
     {
         return $this->document->saveXML();
     }
+
     /**
      * Return as DOM object.
      *
@@ -82,6 +88,7 @@ class ArrayToXml
     {
         return $this->document;
     }
+
     /**
      * Parse individual element.
      *
@@ -91,12 +98,13 @@ class ArrayToXml
     private function convertElement(DOMElement $element, $value)
     {
         $sequential = $this->isArrayAllKeySequential($value);
-        if (! is_array($value)) {
+        if (!is_array($value)) {
             $element->nodeValue = htmlspecialchars($value);
             return;
         }
         foreach ($value as $key => $data) {
-            if (! $sequential) {
+            $key = $this->getRealKey($key);
+            if (!$sequential) {
                 if (($key === '_attributes') || ($key === '@attributes')) {
                     $this->addAttributes($element, $data);
                 } elseif ((($key === '_value') || ($key === '@value')) && is_string($data)) {
@@ -113,6 +121,23 @@ class ArrayToXml
             }
         }
     }
+
+    /**
+     * Get Real key by $.
+     *
+     * @param string $key
+     * @param string $key
+     * @return bool|string
+     */
+    private function getRealKey($key)
+    {
+        $pos = strpos($key, '$');
+        if ($pos > 0) {
+            $key = substr($key, 0, $pos);
+        }
+        return $key;
+    }
+
     /**
      * Add node.
      *
@@ -129,6 +154,7 @@ class ArrayToXml
         $element->appendChild($child);
         $this->convertElement($child, $value);
     }
+
     /**
      * Add collection node.
      *
@@ -147,6 +173,7 @@ class ArrayToXml
         $element->parentNode->appendChild($child);
         $this->convertElement($child, $value);
     }
+
     /**
      * Add sequential node.
      *
@@ -165,6 +192,7 @@ class ArrayToXml
         $child->nodeValue = htmlspecialchars($value);
         $element->parentNode->appendChild($child);
     }
+
     /**
      * Check if array are all sequential.
      *
@@ -174,7 +202,7 @@ class ArrayToXml
      */
     protected function isArrayAllKeySequential($value)
     {
-        if (! is_array($value)) {
+        if (!is_array($value)) {
             return false;
         }
         if (count($value) <= 0) {
@@ -182,6 +210,7 @@ class ArrayToXml
         }
         return array_unique(array_map('is_int', array_keys($value))) === [true];
     }
+
     /**
      * Add attributes.
      *
@@ -194,10 +223,11 @@ class ArrayToXml
             $element->setAttribute($attrKey, $attrVal);
         }
     }
+
     /**
      * Create the root element.
      *
-     * @param  string|array $rootElement
+     * @param string|array $rootElement
      * @return DOMElement
      */
     protected function createRootElement($rootElement)
@@ -216,6 +246,7 @@ class ArrayToXml
         }
         return $element;
     }
+
     /**
      * Pass in an array of elements to set the doctype of the XML.
      * @param $docTypeArray
